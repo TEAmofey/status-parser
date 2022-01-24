@@ -55,7 +55,7 @@ def dump_statuses_every_minute():
         parse(telethon_data.client, links)
         # print(statuses)
         telethon_data.client.disconnect()
-        sleep(3)
+        sleep(55)
 
 
 def loop_a():

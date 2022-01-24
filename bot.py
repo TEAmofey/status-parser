@@ -2,7 +2,7 @@ from telegram import Update, ForceReply
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
 from parser import telethon_data
-
+from statuses import statuses, tostr
 
 # Define a few command handlers. These usually take the two arguments update and
 # context.

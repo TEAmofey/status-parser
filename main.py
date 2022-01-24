@@ -12,22 +12,12 @@ import logging
 
 from time import sleep
 
+from statuses import statuses, tostr
+
 config = configparser.ConfigParser()
 
 config.read("config.ini")
 
-statuses = {"mofeytea": "",
-            "mothersterrorist": "",
-            "kukuruzka_7": "",
-            "ksenono": "",
-            "deniskilseev": ""}
-
-
-def tostr(d: dict) -> str:
-    result = ""
-    for key in d.keys():
-        result += key + ': "' + d[key] + '"\n'
-    return result
 
 # Присваиваем значения внутренним переменным
 telethon_data.phone = config['Telegram']['phone']
@@ -43,7 +33,6 @@ links = ["mofeytea",
 
 
 def parse(client: TelegramClient, links):
-    global statuses
     for link in links:
         user_info = client(GetFullUserRequest(link))
         status = user_info.about

@@ -1,18 +1,39 @@
+import asyncio
 import configparser
 
-from telethon import TelegramClient
+from multiprocessing import Process
 
-from parser import telethon_data, dump_status
+from telethon import TelegramClient
+from telethon.tl.functions.users import GetFullUserRequest
+
+from bot import loop_bot
+from parser import telethon_data
+import logging
+
+from time import sleep
 
 config = configparser.ConfigParser()
 
 config.read("config.ini")
 
+statuses = {"mofeytea": "",
+            "mothersterrorist": "",
+            "kukuruzka_7": "",
+            "ksenono": "",
+            "deniskilseev": ""}
+
+
+def tostr(d: dict) -> str:
+    result = ""
+    for key in d.keys():
+        result += key + ': "' + d[key] + '"\n'
+    return result
+
 # Присваиваем значения внутренним переменным
-telethon_data["phone"] = config['Telegram']['phone']
-telethon_data["api_id"] = config['Telegram']['api_id']
-telethon_data["api_hash"] = config['Telegram']['api_hash']
-telethon_data["username"] = config['Telegram']['username']
+telethon_data.phone = config['Telegram']['phone']
+telethon_data.api_id = int(config['Telegram']['api_id'])
+telethon_data.api_hash = config['Telegram']['api_hash']
+telethon_data.username = config['Telegram']['username']
 
 links = ["mofeytea",
          "mothersterrorist",
@@ -21,20 +42,53 @@ links = ["mofeytea",
          "deniskilseev"]
 
 
-def main():
-    parse(links)
-
-
-def parse(links):
-    telethon_data["client"] = TelegramClient(
-        telethon_data["username"],
-        int(telethon_data["api_id"]),
-        telethon_data["api_hash"]
-    )
-    telethon_data["client"].start()
+def parse(client: TelegramClient, links):
+    global statuses
     for link in links:
-        user = telethon_data["client"].get_entity("https://t.me/" + link)
-        print(link, dump_status(user))
+        user_info = client(GetFullUserRequest(link))
+        status = user_info.about
+        if status is None:
+            status = ""
+        statuses[link] = status
 
 
-main()
+# Enable logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+)
+
+logger = logging.getLogger(__name__)
+
+
+def dump_statuses_every_minute():
+    while True:
+        telethon_data.client.connect()
+        parse(telethon_data.client, links)
+        print(statuses)
+        telethon_data.client.disconnect()
+        sleep(60)
+
+
+def loop_a():
+    telethon_data.client = TelegramClient(
+        telethon_data.username,
+        telethon_data.api_id,
+        telethon_data.api_hash
+    )
+    telethon_data.client.start(
+        lambda: telethon_data.bot_token
+    )
+    telethon_data.client.disconnect()
+    # client.start(
+    #     lambda: telethon_data.bot_token
+    # )
+    dump_statuses_every_minute()
+
+
+def main() -> None:
+    Process(target=loop_a).start()
+    Process(target=loop_bot).start()
+
+
+if __name__ == '__main__':
+    main()

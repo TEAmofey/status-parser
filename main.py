@@ -1,44 +1,15 @@
 import asyncio
-import configparser
-
-from multiprocessing import Process
 
 from telethon import TelegramClient
 from telethon.tl.functions.users import GetFullUserRequest
 
-from bot import loop_bot
-from parser import telethon_data
+from config import telethon_data
 import logging
 
 from time import sleep
 
-from statuses import statuses, tostr
-
-config = configparser.ConfigParser()
-
-config.read("config.ini")
-
 
 # Присваиваем значения внутренним переменным
-telethon_data.phone = config['Telegram']['phone']
-telethon_data.api_id = int(config['Telegram']['api_id'])
-telethon_data.api_hash = config['Telegram']['api_hash']
-telethon_data.username = config['Telegram']['username']
-
-links = ["mofeytea",
-         "mothersterrorist",
-         "kukuruzka_7",
-         "ksenono",
-         "deniskilseev"]
-
-
-def parse(client: TelegramClient, links):
-    for link in links:
-        user_info = client(GetFullUserRequest(link))
-        status = user_info.about
-        if status is None:
-            status = ""
-        statuses[link] = status
 
 
 # Enable logging
@@ -48,17 +19,32 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+my_user_id = 447873267
 
-def dump_statuses_every_minute():
+statuses_old = {my_user_id: ""}
+statuses_new = {my_user_id: ""}
+
+
+async def parse(client: TelegramClient, user_id: int):
+    user_info = await client(GetFullUserRequest(id=user_id))
+    status = user_info.full_user.about
+    if status is None:
+        status = ""
+    statuses_new[user_id] = status
+
+
+async def dump_statuses_every_minute():
     while True:
-        telethon_data.client.connect()
-        parse(telethon_data.client, links)
-        # print(statuses)
-        telethon_data.client.disconnect()
-        sleep(55)
+        await telethon_data.client.connect()
+        await parse(telethon_data.client, my_user_id)
+        if statuses_new[my_user_id] != statuses_old[my_user_id]:
+            await telethon_data.client.send_message("mofeytea_statuses", statuses_new[my_user_id])
+            statuses_old[my_user_id] = statuses_new[my_user_id]
+        await telethon_data.client.disconnect()
+        sleep(5)
 
 
-def loop_a():
+async def loop_a():
     telethon_data.client = TelegramClient(
         telethon_data.username,
         telethon_data.api_id,
@@ -67,17 +53,16 @@ def loop_a():
     telethon_data.client.start(
         lambda: telethon_data.bot_token
     )
-    telethon_data.client.disconnect()
-    # client.start(
-    #     lambda: telethon_data.bot_token
-    # )
-    dump_statuses_every_minute()
+    await telethon_data.client.connect()
+    await telethon_data.client.disconnect()
+    await dump_statuses_every_minute()
 
 
-def main() -> None:
-    Process(target=loop_a).start()
-    Process(target=loop_bot).start()
+async def main():
+    task1 = asyncio.create_task(loop_a())
+
+    await task1
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())

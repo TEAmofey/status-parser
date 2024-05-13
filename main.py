@@ -41,15 +41,13 @@ async def main():
     my_user_id = 447873267
 
     telethon_data.client = TelegramClient(
-        telethon_data.username,
+        "sessions/session_master",
         telethon_data.api_id,
         telethon_data.api_hash
     )
-    telethon_data.client.start(
+    await telethon_data.client.start(
         lambda: telethon_data.bot_token
     )
-    await telethon_data.client.connect()
-    await telethon_data.client.disconnect()
     await dump_statuses_every_n_sec(my_user_id)
 
 

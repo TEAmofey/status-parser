@@ -8,10 +8,6 @@ import logging
 
 from time import sleep
 
-
-# Присваиваем значения внутренним переменным
-
-
 # Enable logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -19,32 +15,31 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-my_user_id = 447873267
-
-statuses_old = {my_user_id: ""}
-statuses_new = {my_user_id: ""}
-
 
 async def parse(client: TelegramClient, user_id: int):
     user_info = await client(GetFullUserRequest(id=user_id))
     status = user_info.full_user.about
-    if status is None:
-        status = ""
-    statuses_new[user_id] = status
+    return status if status is not None else ""
 
 
-async def dump_statuses_every_minute():
+async def dump_statuses_every_n_sec(user_id: int, n: int = 10):
+    await telethon_data.client.connect()
+    status = await parse(telethon_data.client, user_id)
+    await telethon_data.client.disconnect()
+
     while True:
         await telethon_data.client.connect()
-        await parse(telethon_data.client, my_user_id)
-        if statuses_new[my_user_id] != statuses_old[my_user_id]:
-            await telethon_data.client.send_message("mofeytea_statuses", statuses_new[my_user_id])
-            statuses_old[my_user_id] = statuses_new[my_user_id]
+        new_status = await parse(telethon_data.client, user_id)
+        if new_status != status:
+            await telethon_data.client.send_message("mofeytea_statuses", new_status)
+            status = new_status
         await telethon_data.client.disconnect()
-        sleep(5)
+        sleep(n)
 
 
-async def loop_a():
+async def main():
+    my_user_id = 447873267
+
     telethon_data.client = TelegramClient(
         telethon_data.username,
         telethon_data.api_id,
@@ -55,13 +50,7 @@ async def loop_a():
     )
     await telethon_data.client.connect()
     await telethon_data.client.disconnect()
-    await dump_statuses_every_minute()
-
-
-async def main():
-    task1 = asyncio.create_task(loop_a())
-
-    await task1
+    await dump_statuses_every_n_sec(my_user_id)
 
 
 if __name__ == '__main__':

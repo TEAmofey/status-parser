@@ -22,7 +22,7 @@ async def parse(client: TelegramClient, user_id: int):
     return status if status is not None else ""
 
 
-async def dump_statuses_every_n_sec(user_id: int, n: int = 10):
+async def dump_statuses_every_n_sec(user_id: int, n: int = 3600):
     await telethon_data.client.connect()
     status = await parse(telethon_data.client, user_id)
     await telethon_data.client.disconnect()

@@ -48,7 +48,7 @@ async def main():
     await telethon_data.client.start(
         lambda: telethon_data.bot_token
     )
-    await dump_statuses_every_n_sec(my_user_id)
+    await dump_statuses_every_n_sec(my_user_id,  60)
 
 
 if __name__ == '__main__':

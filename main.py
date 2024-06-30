@@ -31,7 +31,7 @@ async def dump_statuses_every_n_sec(user_id: int, n: int = 3600):
         await telethon_data.client.connect()
         new_status = await parse(telethon_data.client, user_id)
         if new_status != status:
-            await telethon_data.client.send_message("mofeytea_statuses", new_status)
+            await telethon_data.client.send_message("statuses_mofeytea", new_status)
             status = new_status
         await telethon_data.client.disconnect()
         sleep(n)
